@@ -1060,33 +1060,47 @@
                                 }}>
                                     {/* USD Price - BIGGER - Label inline */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
-                                        <div style={{fontSize: '28px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold'}}>USD</div>
+                                        <div style={{fontSize: '28px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>USD</div>
                                         <div style={{display: 'flex', alignItems: 'center'}}>
-                                            <span style={{fontSize: '28px', fontWeight: 'bold', marginRight: '6px'}}>$</span>
-                                            <input 
-                                                type="text" 
+                                            <span style={{fontSize: '28px', fontWeight: 'bold', marginRight: '6px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>$</span>
+                                            <div
                                                 className="edit-field edit-field-white"
-                                                style={{fontSize: '28px', fontWeight: 'bold', textAlign: 'right', color: 'white', width: '170px', background: 'transparent', border: 'none'}}
-                                                value={propertyData.priceUSD}
-                                                onChange={(e) => handleInputChange('priceUSD', e.target.value)}
-                                            />
+                                                contentEditable={!isCleanView}
+                                                onInput={(e) => handleInputChange('priceUSD', e.currentTarget.textContent)}
+                                                suppressContentEditableWarning={true}
+                                                style={{fontSize: '28px', fontWeight: 'bold', textAlign: 'right', color: 'white', minWidth: '170px', maxWidth: '250px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
+                                            >
+                                                {propertyData.priceUSD}
+                                            </div>
                                         </div>
                                     </div>
                                     
                                     {/* MXN Price - SMALLER - Label inline */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
-                                        <div style={{fontSize: '9px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px'}}>MXN</div>
+                                        <div style={{fontSize: '9px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>MXN</div>
                                         <div style={{display: 'flex', alignItems: 'center'}}>
-                                            <span style={{fontSize: '14px', marginRight: '4px'}}>$</span>
-                                            <input 
-                                                type="text" 
+                                            <span style={{fontSize: '14px', marginRight: '4px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>$</span>
+                                            <div
                                                 className="edit-field edit-field-white"
-                                                style={{fontSize: '14px', textAlign: 'right', color: 'white', width: '140px', background: 'transparent', border: 'none'}}
-                                                value={propertyData.priceMXN}
-                                                onChange={(e) => handleInputChange('priceMXN', e.target.value)}
-                                            />
+                                                contentEditable={!isCleanView}
+                                                onInput={(e) => handleInputChange('priceMXN', e.currentTarget.textContent)}
+                                                suppressContentEditableWarning={true}
+                                                style={{fontSize: '14px', textAlign: 'right', color: 'white', minWidth: '140px', maxWidth: '200px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
+                                            >
+                                                {propertyData.priceMXN}
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* Separator Line */}
+                                    <div style={{
+                                        width: '60%',
+                                        height: '1px',
+                                        background: 'rgba(255, 255, 255, 0.3)',
+                                        marginBottom: '8px',
+                                        marginTop: '4px',
+                                        marginLeft: 'auto'
+                                    }}></div>
 
                                     {/* Size and Year Built */}
                                     <div style={{display: 'flex', gap: '18px', fontSize: '13px', justifyContent: 'flex-end', alignItems: 'flex-end'}}>
