@@ -1033,7 +1033,7 @@
                                     <div
                                         className="edit-field edit-field-white"
                                         contentEditable={!isCleanView}
-                                        onInput={(e) => handleInputChange('address', e.currentTarget.textContent)}
+                                        onBlur={(e) => handleInputChange('address', e.currentTarget.textContent)}
                                         suppressContentEditableWarning={true}
                                         style={{fontSize: '32px', fontWeight: 'bold', color: 'white', background: 'transparent', border: 'none', lineHeight: '1.1', marginBottom: '6px', outline: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}
                                     >
@@ -1045,7 +1045,7 @@
                                         <div
                                             className="edit-field edit-field-white"
                                             contentEditable={!isCleanView}
-                                            onInput={(e) => handleInputChange('mls', e.currentTarget.textContent)}
+                                            onBlur={(e) => handleInputChange('mls', e.currentTarget.textContent)}
                                             suppressContentEditableWarning={true}
                                             style={{fontSize: '16px', fontWeight: '600', color: 'white', background: 'transparent', border: 'none', outline: 'none', display: 'inline-block', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}
                                         >
@@ -1070,7 +1070,7 @@
                                             <div
                                                 className="edit-field edit-field-white"
                                                 contentEditable={!isCleanView}
-                                                onInput={(e) => handleInputChange('priceUSD', e.currentTarget.textContent)}
+                                                onBlur={(e) => handleInputChange('priceUSD', e.currentTarget.textContent)}
                                                 suppressContentEditableWarning={true}
                                                 style={{fontSize: '28px', fontWeight: 'bold', textAlign: 'right', color: 'white', minWidth: '170px', maxWidth: '250px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
                                             >
@@ -1087,7 +1087,7 @@
                                             <div
                                                 className="edit-field edit-field-white"
                                                 contentEditable={!isCleanView}
-                                                onInput={(e) => handleInputChange('priceMXN', e.currentTarget.textContent)}
+                                                onBlur={(e) => handleInputChange('priceMXN', e.currentTarget.textContent)}
                                                 suppressContentEditableWarning={true}
                                                 style={{fontSize: '14px', textAlign: 'right', color: 'white', minWidth: '140px', maxWidth: '200px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
                                             >
@@ -1285,12 +1285,15 @@
                                         <div 
                                             className="edit-field edit-field-dark text-xs leading-relaxed flex-1"
                                             contentEditable={!isCleanView}
-                                            onInput={(e) => {
+                                            onBlur={(e) => {
                                                 const text = e.currentTarget.textContent;
                                                 if (text.length <= 350) {
                                                     handleInputChange('overview', text);
                                                 } else {
-                                                    e.currentTarget.textContent = propertyData.overview;
+                                                    // Truncate to 350 characters
+                                                    const truncated = text.substring(0, 350);
+                                                    handleInputChange('overview', truncated);
+                                                    e.currentTarget.textContent = truncated;
                                                 }
                                             }}
                                             suppressContentEditableWarning={true}
