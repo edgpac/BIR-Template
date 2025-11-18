@@ -1030,23 +1030,27 @@
                                     maxWidth: '50%'
                                 }}>
                                     {/* Address first (was second) */}
-                                    <input 
-                                        type="text" 
+                                    <div
                                         className="edit-field edit-field-white"
-                                        style={{fontSize: '32px', fontWeight: 'bold', color: 'white', background: 'transparent', border: 'none', lineHeight: '1.1', marginBottom: '6px'}}
-                                        value={propertyData.address}
-                                        onChange={(e) => handleInputChange('address', e.target.value)}
-                                    />
+                                        contentEditable={!isCleanView}
+                                        onInput={(e) => handleInputChange('address', e.currentTarget.textContent)}
+                                        suppressContentEditableWarning={true}
+                                        style={{fontSize: '32px', fontWeight: 'bold', color: 'white', background: 'transparent', border: 'none', lineHeight: '1.1', marginBottom: '6px', outline: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}
+                                    >
+                                        {propertyData.address}
+                                    </div>
                                     {/* MLS second (was first) - Label inline */}
                                     <div style={{display: 'flex', alignItems: 'baseline', gap: '8px'}}>
                                         <div style={{fontSize: '10px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px'}}>MLS</div>
-                                        <input 
-                                            type="text" 
+                                        <div
                                             className="edit-field edit-field-white"
-                                            style={{fontSize: '16px', fontWeight: '600', color: 'white', background: 'transparent', border: 'none'}}
-                                            value={propertyData.mls}
-                                            onChange={(e) => handleInputChange('mls', e.target.value)}
-                                        />
+                                            contentEditable={!isCleanView}
+                                            onInput={(e) => handleInputChange('mls', e.currentTarget.textContent)}
+                                            suppressContentEditableWarning={true}
+                                            style={{fontSize: '16px', fontWeight: '600', color: 'white', background: 'transparent', border: 'none', outline: 'none', display: 'inline-block', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}
+                                        >
+                                            {propertyData.mls}
+                                        </div>
                                     </div>
                                 </div>
 
