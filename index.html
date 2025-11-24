@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
@@ -61,7 +62,7 @@
         }
 
         .logo img {
-            height: 48px;
+            height: 60px;
         }
 
         .price-section {
@@ -212,6 +213,22 @@
             box-shadow: 0 2px 15px rgba(0,0,0,0.1);
             z-index: 1000;
             width: 200px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .controls-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .controls-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .controls-panel::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
         }
 
         .btn {
@@ -459,13 +476,53 @@
             margin-right: 15px;
             color: #3b82f6;
         }
+
+        /* QR Code Styles */
+        .qr-code-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .qr-code-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #qr-code-preview {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        #qr-code-preview canvas {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+
+        #qr-code-flyer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #qr-code-flyer canvas {
+            max-width: 60px !important;
+            max-height: 60px !important;
+            height: auto !important;
+            width: auto !important;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useRef } = React;
+        const { useState, useRef, useEffect } = React;
 
         function PropertyFlyerEditor() {
             const [propertyData, setPropertyData] = useState({
@@ -486,7 +543,9 @@
                 image1: null,
                 image2: null,
                 image3: null,
-                image4: null
+                image4: null,
+                qrCodeUrl: '',
+                qrCodeLabel: 'Scan Listing'
             });
 
             const [customFeatures, setCustomFeatures] = useState([]);
@@ -545,6 +604,47 @@
             const image3Ref = useRef(null);
             const image4Ref = useRef(null);
 
+            // Generate QR Codes when URL changes
+            useEffect(() => {
+                if (propertyData.qrCodeUrl && propertyData.qrCodeUrl.trim()) {
+                    // QR Code for control panel preview
+                    const qrPreview = document.getElementById('qr-code-preview');
+                    if (qrPreview) {
+                        qrPreview.innerHTML = '';
+                        try {
+                            new QRCode(qrPreview, {
+                                text: propertyData.qrCodeUrl,
+                                width: 120,
+                                height: 120,
+                                colorDark: '#1e3a8a',
+                                colorLight: '#ffffff',
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        } catch (error) {
+                            console.error('QR Code preview generation failed:', error);
+                        }
+                    }
+                    
+                    // QR Code for flyer (smaller, next to amenities)
+                    const qrFlyer = document.getElementById('qr-code-flyer');
+                    if (qrFlyer) {
+                        qrFlyer.innerHTML = '';
+                        try {
+                            new QRCode(qrFlyer, {
+                                text: propertyData.qrCodeUrl,
+                                width: 60,
+                                height: 60,
+                                colorDark: '#1e3a8a',
+                                colorLight: '#ffffff',
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        } catch (error) {
+                            console.error('QR Code flyer generation failed:', error);
+                        }
+                    }
+                }
+            }, [propertyData.qrCodeUrl]);
+
             const handleInputChange = (field, value) => {
                 setPropertyData(prev => ({
                     ...prev,
@@ -556,14 +656,12 @@
             const handleImageUpload = (field, event) => {
                 const file = event.target.files[0];
                 if (file) {
-                    // Validate file type
                     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
                     if (!validTypes.includes(file.type)) {
                         alert('Please select a valid image file (JPG, PNG, or WebP)');
                         return;
                     }
                     
-                    // Check file size (max 10MB)
                     const maxSize = 10 * 1024 * 1024;
                     if (file.size > maxSize) {
                         alert('File size too large. Please use images smaller than 10MB.');
@@ -656,19 +754,19 @@
                         image1: null,
                         image2: null,
                         image3: null,
-                        image4: null
+                        image4: null,
+                        qrCodeUrl: '',
+                        qrCodeLabel: 'Scan Listing'
                     });
                     setIsSaved(true);
                 }
             };
 
             const handleSave = () => {
-                // Force a re-render to ensure all state is current
                 setPropertyData({...propertyData});
                 setIsSaved(true);
                 setShowSaveMessage(true);
                 
-                // Hide the save message after 2 seconds
                 setTimeout(() => {
                     setShowSaveMessage(false);
                 }, 2000);
@@ -679,15 +777,11 @@
             };
 
             const downloadAsImage = async () => {
-                // Enable clean view temporarily
                 setIsCleanView(true);
                 
-                // Wait for DOM to update and render
                 setTimeout(async () => {
                     try {
                         const flyer = document.querySelector('.flyer-container');
-                        
-                        // Force a reflow to ensure all styles are applied
                         flyer.offsetHeight;
                         
                         const canvas = await html2canvas(flyer, {
@@ -701,7 +795,6 @@
                             scrollX: 0,
                             scrollY: 0,
                             onclone: (clonedDoc) => {
-                                // In the cloned document, convert all inputs to divs with text content
                                 const clonedFlyer = clonedDoc.querySelector('.flyer-container');
                                 const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
                                 inputs.forEach(input => {
@@ -762,20 +855,11 @@
                 }, 100);
             };
 
-            const openInNewWindow = () => {
-                setIsCleanView(true);
-                setTimeout(() => {
-                    window.open(window.location.href, '_blank');
-                    setIsCleanView(false);
-                }, 100);
-            };
-
             return (
                 <>
                     <div className="controls-panel">
                         <h3 className="text-sm font-bold mb-3 text-gray-800">Controls</h3>
                         
-                        {/* Save Button with status indicator */}
                         <button 
                             className="btn" 
                             style={{
@@ -841,6 +925,36 @@
                             </button>
                         </div>
 
+                        {/* QR Code Section */}
+                        <div className="qr-code-section">
+                            <h4 className="text-xs font-bold text-gray-700 mb-2">
+                                <i className="fas fa-qrcode mr-1"></i>
+                                QR Code
+                            </h4>
+                            <input 
+                                type="text" 
+                                className="edit-field text-xs"
+                                placeholder="Property URL"
+                                value={propertyData.qrCodeUrl}
+                                onChange={(e) => handleInputChange('qrCodeUrl', e.target.value)}
+                                style={{marginBottom: '8px', fontSize: '11px'}}
+                            />
+                            <input 
+                                type="text" 
+                                className="edit-field text-xs"
+                                placeholder="QR Label"
+                                value={propertyData.qrCodeLabel}
+                                onChange={(e) => handleInputChange('qrCodeLabel', e.target.value)}
+                                style={{marginBottom: '10px', fontSize: '11px'}}
+                            />
+                            {propertyData.qrCodeUrl && (
+                                <div className="qr-code-container">
+                                    <div id="qr-code-preview"></div>
+                                    <p className="text-xs text-gray-500">Preview</p>
+                                </div>
+                            )}
+                        </div>
+
                         <button className="btn" style={{background: '#ef4444', color: 'white', marginTop: '10px'}} onClick={handleReset}>
                             <i className="fas fa-redo mr-1"></i>
                             Reset
@@ -851,6 +965,7 @@
                             <ul className="list-disc pl-3 space-y-0.5 text-xs">
                                 <li>Click text to edit</li>
                                 <li>Hover images to upload</li>
+                                <li>QR code appears with amenities</li>
                             </ul>
                         </div>
 
@@ -939,9 +1054,8 @@
                     )}
 
                     <div className={`flyer-container ${isCleanView ? 'clean-view' : ''}`}>
-                        {/* Hero Section with Image - New Unified Blue Gradient Design */}
+                        {/* Hero Section with Image */}
                         <div style={{position: 'relative', width: '100%', height: '500px', overflow: 'hidden'}}>
-                            {/* Hero Image Background */}
                             <div 
                                 className="image-upload-btn" 
                                 style={{
@@ -991,7 +1105,7 @@
                                 )}
                             </div>
 
-                            {/* Blue Gradient Overlay Section - Unified with logo, MLS, address, and pricing */}
+                            {/* Blue Gradient Overlay */}
                             <div style={{
                                 position: 'absolute',
                                 bottom: 0,
@@ -1001,27 +1115,28 @@
                                 background: 'linear-gradient(to top, rgba(30, 58, 138, 0.98) 0%, rgba(30, 58, 138, 0.95) 35%, rgba(30, 58, 138, 0.70) 65%, transparent 100%)',
                                 zIndex: 5
                             }}>
-                                {/* Logo - Much smaller bubble */}
+                                {/* Logo - MINIMAL bubble container with 60px logo inside */}
                                 <div style={{
                                     position: 'absolute',
                                     top: '12px',
                                     left: '0',
                                     background: 'white',
-                                    padding: '8px 14px',
-                                    borderRadius: '0 20% 20% 0',
+                                    padding: '2px 6px',
+                                    borderRadius: '0 0 8px 0',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center'
+                                    justifyContent: 'center',
+                                    zIndex: 10
                                 }}>
                                     <img 
                                         src="https://res.cloudinary.com/dhwnr1pa5/image/upload/v1762021536/Screenshot_2025-10-31_at_5.21.25_PM-removebg-preview_2_gndt9y.png" 
                                         alt="BIR Logo" 
-                                        style={{height: '38px'}}
+                                        style={{height: '60px'}}
                                     />
                                 </div>
 
-                                {/* Address and MLS Section - Bottom Left (SWAPPED POSITIONS) */}
+                                {/* Address and MLS - Bottom Left */}
                                 <div style={{
                                     position: 'absolute',
                                     bottom: '18px',
@@ -1029,7 +1144,6 @@
                                     color: 'white',
                                     maxWidth: '50%'
                                 }}>
-                                    {/* Address first (was second) */}
                                     <div
                                         className="edit-field edit-field-white"
                                         contentEditable={!isCleanView}
@@ -1039,7 +1153,6 @@
                                     >
                                         {propertyData.address}
                                     </div>
-                                    {/* MLS second (was first) - Label inline */}
                                     <div style={{display: 'flex', alignItems: 'baseline', gap: '8px'}}>
                                         <div style={{fontSize: '10px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px'}}>MLS</div>
                                         <div
@@ -1054,7 +1167,7 @@
                                     </div>
                                 </div>
 
-                                {/* Pricing Section - Bottom Right */}
+                                {/* Pricing - Bottom Right */}
                                 <div style={{
                                     position: 'absolute',
                                     bottom: '18px',
@@ -1062,7 +1175,6 @@
                                     color: 'white',
                                     textAlign: 'right'
                                 }}>
-                                    {/* USD Price - BIGGER - Label inline */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
                                         <div style={{fontSize: '28px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>USD</div>
                                         <div style={{display: 'flex', alignItems: 'center'}}>
@@ -1079,7 +1191,6 @@
                                         </div>
                                     </div>
                                     
-                                    {/* MXN Price - SMALLER - Label inline */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
                                         <div style={{fontSize: '9px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>MXN</div>
                                         <div style={{display: 'flex', alignItems: 'center'}}>
@@ -1096,7 +1207,6 @@
                                         </div>
                                     </div>
 
-                                    {/* Separator Line */}
                                     <div style={{
                                         width: '60%',
                                         height: '1px',
@@ -1106,7 +1216,6 @@
                                         marginLeft: 'auto'
                                     }}></div>
 
-                                    {/* Size and Year Built */}
                                     <div style={{display: 'flex', gap: '18px', fontSize: '13px', justifyContent: 'flex-end', alignItems: 'flex-end'}}>
                                         <div style={{textAlign: 'right'}}>
                                             <div style={{opacity: 0.8, fontSize: '9px', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Size</div>
@@ -1139,146 +1248,45 @@
                         {/* Content Section */}
                         <div className="content-section">
                             <div style={{display: 'flex', gap: '16px', width: '100%', maxWidth: '100%'}}>
-                                {/* Left side: 2x2 Grid of Images */}
+                                {/* Left: 2x2 Grid */}
                                 <div style={{flex: '0 0 66%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
-                                    {/* Interior Image 1 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image1Ref)}
-                                        >
-                                            {propertyData.image1 ? (
-                                                <img src={propertyData.image1} className="interior-image" alt="Interior 1" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
+                                    {[1, 2, 3, 4].map(num => (
+                                        <div key={num} style={{minWidth: 0}}>
+                                            <div 
+                                                className="image-upload-btn" 
+                                                style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
+                                                onClick={() => triggerFileInput(eval(`image${num}Ref`))}
+                                            >
+                                                {propertyData[`image${num}`] ? (
+                                                    <img src={propertyData[`image${num}`]} className="interior-image" alt={`Interior ${num}`} />
+                                                ) : (
+                                                    <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
+                                                        <div className="text-center text-gray-400">
+                                                            <i className="fas fa-camera text-2xl mb-2"></i>
+                                                            <p className="text-xs">Upload Image</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image1', e)}
-                                                ref={image1Ref}
-                                            />
-                                            {propertyData.image1 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
+                                                )}
+                                                <input 
+                                                    type="file" 
+                                                    style={{display: 'none'}}
+                                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                    onChange={(e) => handleImageUpload(`image${num}`, e)}
+                                                    ref={eval(`image${num}Ref`)}
+                                                />
+                                                {propertyData[`image${num}`] && (
+                                                    <div className="upload-overlay">
+                                                        <div className="text-white text-center">
+                                                            <i className="fas fa-camera text-xl"></i>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {/* Interior Image 2 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image2Ref)}
-                                        >
-                                            {propertyData.image2 ? (
-                                                <img src={propertyData.image2} className="interior-image" alt="Interior 2" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image2', e)}
-                                                ref={image2Ref}
-                                            />
-                                            {propertyData.image2 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Interior Image 3 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image3Ref)}
-                                        >
-                                            {propertyData.image3 ? (
-                                                <img src={propertyData.image3} className="interior-image" alt="Interior 3" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image3', e)}
-                                                ref={image3Ref}
-                                            />
-                                            {propertyData.image3 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Interior Image 4 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image4Ref)}
-                                        >
-                                            {propertyData.image4 ? (
-                                                <img src={propertyData.image4} className="interior-image" alt="Interior 4" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image4', e)}
-                                                ref={image4Ref}
-                                            />
-                                            {propertyData.image4 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Right side: Unit Overview */}
+                                {/* Right: Overview */}
                                 <div style={{flex: '0 0 34%', minWidth: 0, overflow: 'hidden'}}>
                                     <div className="unit-overview-section" style={{height: '382px', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%'}}>
                                         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Unit Overview</h3>
@@ -1290,7 +1298,6 @@
                                                 if (text.length <= 350) {
                                                     handleInputChange('overview', text);
                                                 } else {
-                                                    // Truncate to 350 characters
                                                     const truncated = text.substring(0, 350);
                                                     handleInputChange('overview', truncated);
                                                     e.currentTarget.textContent = truncated;
@@ -1328,7 +1335,7 @@
                                 </div>
                             </div>
 
-                            {/* Amenities Section */}
+                            {/* Amenities with QR Code */}
                             <div className="amenities-section">
                                 {amenityIcons.map((amenity, index) => (
                                     <div key={index} className="amenity-item" style={{position: 'relative'}}>
@@ -1352,6 +1359,26 @@
                                         <div className="amenity-label">{amenity.label}</div>
                                     </div>
                                 ))}
+                                
+                                {/* QR Code in amenities section */}
+                                {propertyData.qrCodeUrl && (
+                                    <div className="amenity-item" style={{position: 'relative'}}>
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}>
+                                            <div id="qr-code-flyer" style={{
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                marginBottom: '3px'
+                                            }}></div>
+                                            <div className="amenity-label">{propertyData.qrCodeLabel}</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
