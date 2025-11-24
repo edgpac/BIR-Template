@@ -855,6 +855,152 @@
                 }, 100);
             };
 
+            const downloadMultiFormat = async (format) => {
+                const formats = {
+                    instagram: { 
+                        width: 1080, 
+                        height: 1080, 
+                        scale: 6,
+                        name: 'instagram-post',
+                        captureHeight: null
+                    },
+                    facebook: {
+                        width: 1200,
+                        height: 630,
+                        scale: 8,
+                        name: 'facebook-post',
+                        captureHeight: 850
+                    },
+                    print: { 
+                        width: 2550, 
+                        height: 3300, 
+                        scale: 4,
+                        name: 'print-flyer-8.5x11',
+                        captureHeight: null
+                    }
+                };
+
+                const spec = formats[format];
+                if (!spec) return;
+
+                setIsCleanView(true);
+                
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        const flyerRect = flyer.getBoundingClientRect();
+                        
+                        const captureWidth = flyerRect.width;
+                        const captureHeight = spec.captureHeight || flyerRect.height;
+                        
+                        console.log(`Capturing at ${captureWidth * spec.scale}×${captureHeight * spec.scale}px (${spec.scale}x scale)`);
+                        
+                        const canvas = await html2canvas(flyer, {
+                            scale: spec.scale,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: '#ffffff',
+                            logging: false,
+                            width: captureWidth,
+                            height: captureHeight,
+                            x: 0,
+                            y: 0,
+                            imageTimeout: 0,
+                            removeContainer: true,
+                            onclone: (clonedDoc) => {
+                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
+                                
+                                clonedFlyer.style.fontSmooth = 'always';
+                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
+                                clonedFlyer.style.mozOsxFontSmoothing = 'grayscale';
+                                clonedFlyer.style.textRendering = 'optimizeLegibility';
+                                clonedFlyer.style.imageRendering = 'high-quality';
+                                
+                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
+                                inputs.forEach(input => {
+                                    const span = clonedDoc.createElement('span');
+                                    span.textContent = input.value;
+                                    span.style.cssText = window.getComputedStyle(input).cssText;
+                                    span.style.border = 'none';
+                                    span.style.background = 'transparent';
+                                    span.style.whiteSpace = 'pre-wrap';
+                                    span.style.display = 'inline-block';
+                                    span.style.webkitFontSmoothing = 'antialiased';
+                                    span.style.textRendering = 'optimizeLegibility';
+                                    input.parentNode.replaceChild(span, input);
+                                });
+                                
+                                const editables = clonedFlyer.querySelectorAll('[contenteditable]');
+                                editables.forEach(editable => {
+                                    editable.removeAttribute('contenteditable');
+                                    editable.style.webkitFontSmoothing = 'antialiased';
+                                    editable.style.textRendering = 'optimizeLegibility';
+                                });
+                            }
+                        });
+
+                        console.log(`Captured canvas: ${canvas.width}×${canvas.height}px`);
+
+                        const finalCanvas = document.createElement('canvas');
+                        finalCanvas.width = spec.width;
+                        finalCanvas.height = spec.height;
+                        const ctx = finalCanvas.getContext('2d', { 
+                            alpha: false,
+                            desynchronized: false,
+                            willReadFrequently: false
+                        });
+                        
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, spec.width, spec.height);
+
+                        let drawWidth, drawHeight, offsetX, offsetY;
+                        
+                        if (format === 'facebook') {
+                            const sourceAspect = canvas.width / canvas.height;
+                            const targetAspect = spec.width / spec.height;
+                            
+                            if (sourceAspect > targetAspect) {
+                                drawHeight = spec.height;
+                                drawWidth = drawHeight * sourceAspect;
+                                offsetX = -(drawWidth - spec.width) / 2;
+                                offsetY = 0;
+                            } else {
+                                drawWidth = spec.width;
+                                drawHeight = drawWidth / sourceAspect;
+                                offsetX = 0;
+                                offsetY = 0;
+                            }
+                        } else {
+                            const fitScale = Math.min(
+                                spec.width / canvas.width,
+                                spec.height / canvas.height
+                            );
+                            drawWidth = canvas.width * fitScale;
+                            drawHeight = canvas.height * fitScale;
+                            offsetX = (spec.width - drawWidth) / 2;
+                            offsetY = (spec.height - drawHeight) / 2;
+                        }
+
+                        ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
+
+                        console.log(`Final export: ${spec.width}×${spec.height}px`);
+
+                        const link = document.createElement('a');
+                        link.download = `${spec.name}-${Date.now()}.png`;
+                        link.href = finalCanvas.toDataURL('image/png', 1.0);
+                        link.click();
+                        
+                        setIsCleanView(false);
+                    } catch (error) {
+                        console.error('Multi-format export failed:', error);
+                        alert('Export failed. Please try again.');
+                        setIsCleanView(false);
+                    }
+                }, 300);
+            };
+
             return (
                 <>
                     <div className="controls-panel">
@@ -922,6 +1068,38 @@
                             >
                                 <i className={`fas ${isCleanView ? 'fa-edit' : 'fa-eye'} mr-1`}></i>
                                 {isCleanView ? 'Show Editor' : 'Preview Clean'}
+                            </button>
+                        </div>
+
+                        {/* Multi-Format Export */}
+                        <div className="export-options" style={{marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e5e7eb'}}>
+                            <p className="text-xs font-semibold text-gray-700 mb-2">
+                                <i className="fas fa-magic mr-1"></i>
+                                Multi-Format
+                            </p>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#E4405F', color: 'white'}}
+                                onClick={() => downloadMultiFormat('instagram')}
+                            >
+                                <i className="fab fa-instagram mr-1"></i>
+                                Instagram (1080×1080)
+                            </button>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#1877F2', color: 'white'}}
+                                onClick={() => downloadMultiFormat('facebook')}
+                            >
+                                <i className="fab fa-facebook mr-1"></i>
+                                Facebook (1200×630)
+                            </button>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#7c3aed', color: 'white'}}
+                                onClick={() => downloadMultiFormat('print')}
+                            >
+                                <i className="fas fa-print mr-1"></i>
+                                Print 8.5×11
                             </button>
                         </div>
 
